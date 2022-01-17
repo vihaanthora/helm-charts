@@ -1,0 +1,63 @@
+title: Bump `ldap` docker image digest and helm chart version
+
+scms:
+  default:
+    kind: github
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner }}"
+      repository: "{{ .github.repository }}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      branch: "{{ .github.branch }}"
+
+sources:
+  crond:
+    kind: dockerDigest
+    name: "Get jenkinsciinfra/ldap:cron-latest docker image digest"
+    spec:
+      image: "jenkinsciinfra/ldap"
+      tag: "cron-latest"
+  slapd:
+    kind: dockerDigest
+    name: Get jenkinsciinfra/ldap:latest docker image digest
+    spec:
+      image: "jenkinsciinfra/ldap"
+      tag: "latest"
+
+# no condition to test docker image availability as we're using a digest from docker hub
+
+targets:
+  updateChartCrond:
+    name: Update jenkins-wiki-exporter helm chart
+    kind: helmChart
+    sourceID: crond
+    spec:
+      name: charts/ldap
+      key: image.crond.tag
+      versionincrement: patch
+    scmID: default
+  updateChartSlapd:
+    name: Update jenkins-wiki-exporter helm chart
+    kind: helmChart
+    sourceID: slapd
+    spec:
+      name: charts/ldap
+      key: image.slapd.tag
+      versionincrement: patch
+    scmID: default
+
+pullrequests:
+  default:
+    kind: github
+    scmID: default
+    targets:
+      - updateChartCrond
+      - updateChartSlapd
+    spec:
+      labels:
+        - dependencies
+        - ldap
+        - crond
+        - slapd
